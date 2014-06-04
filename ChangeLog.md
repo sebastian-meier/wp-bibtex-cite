@@ -1,6 +1,6 @@
 ## 0.0.1 (4 June 2014)
 
-* Initial Commit based on Tom McFarlins Boilerplace (https://github.com/tommcfarlin/WordPress-Plugin-Boilerplate)
+* Initial Commit based on Tom McFarlins Boilerplate (https://github.com/tommcfarlin/WordPress-Plugin-Boilerplate)
 
 ## Author Information
 
