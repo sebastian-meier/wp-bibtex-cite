@@ -66,7 +66,7 @@ class WP_Bibtex_Cite_Admin {
 		 * - Rename "Plugin_Name" to the name of your initial plugin class
 		 *
 		 */
-		$plugin = Plugin_Name::get_instance();
+		$plugin = WP_Bibtex_Cite::get_instance();
 		$this->plugin_slug = $plugin->get_plugin_slug();
 
 		// Load admin style sheet and JavaScript.
@@ -136,7 +136,8 @@ class WP_Bibtex_Cite_Admin {
 
 		$screen = get_current_screen();
 		if ( $this->plugin_screen_hook_suffix == $screen->id ) {
-			wp_enqueue_style( $this->plugin_slug .'-admin-styles', plugins_url( 'assets/css/admin.css', __FILE__ ), array(), Plugin_Name::VERSION );
+			wp_enqueue_style( $this->plugin_slug .'-admin-styles', plugins_url( 'assets/css/admin.css', __FILE__ ), array(), WP_Bibtex_Cite::VERSION );
+			wp_enqueue_style( $this->plugin_slug .'-admin-styles-datatables', 'http://cdn.datatables.net/1.10.0/css/jquery.dataTables.css' );
 		}
 
 	}
@@ -160,7 +161,9 @@ class WP_Bibtex_Cite_Admin {
 
 		$screen = get_current_screen();
 		if ( $this->plugin_screen_hook_suffix == $screen->id ) {
-			wp_enqueue_script( $this->plugin_slug . '-admin-script', plugins_url( 'assets/js/admin.js', __FILE__ ), array( 'jquery' ), Plugin_Name::VERSION );
+			wp_enqueue_script( $this->plugin_slug . '-admin-script', plugins_url( 'assets/js/admin.js', __FILE__ ), array( 'jquery' ), WP_Bibtex_Cite::VERSION );
+			wp_enqueue_script( $this->plugin_slug . '-admin-script-datatables', 'http://cdn.datatables.net/1.10.0/js/jquery.dataTables.js', array( 'jquery' ) );
+
 		}
 
 	}
@@ -187,8 +190,8 @@ class WP_Bibtex_Cite_Admin {
 		 *   For reference: http://codex.wordpress.org/Roles_and_Capabilities
 		 */
 		$this->plugin_screen_hook_suffix = add_options_page(
-			__( 'Page Title', $this->plugin_slug ),
-			__( 'Menu Text', $this->plugin_slug ),
+			__( 'BibTex Cite', $this->plugin_slug ),
+			__( 'BibTeX Cite', $this->plugin_slug ),
 			'manage_options',
 			$this->plugin_slug,
 			array( $this, 'display_plugin_admin_page' )
@@ -202,6 +205,54 @@ class WP_Bibtex_Cite_Admin {
 	 * @since    1.0.0
 	 */
 	public function display_plugin_admin_page() {
+		global $wpdb;
+
+		$plugin = WP_Bibtex_Cite::get_instance();
+
+		if(isset($_FILES)){
+			$added_cites = array();
+			require_once( ABSPATH . 'wp-content/plugins/wp-bibtex-cite/includes/phpBibLib/lib_bibtex.inc.php' );
+			$bib = new Bibtex($_FILES["file"]["tmp_name"]);
+			foreach($bib->bibarr as $key => $value){
+				$result = $wpdb->query( 
+					$wpdb->prepare( 
+						"SELECT * FROM ". $plugin->get_table() ." WHERE bibtexkey = %s",
+						$key
+					)
+				);
+				if(!$result){
+					$r = $wpdb->query( 
+						$wpdb->prepare( 
+							"INSERT INTO ". $plugin->get_table() ." (bibtexkey)VALUES(%s)",
+							$key
+						)
+					);
+					array_push($added_cites, $key);
+					foreach ($value as $column => $data) {
+						if($plugin->get_table_field_exists($column)){
+							$wpdb->query( 
+								$wpdb->prepare( 
+									"UPDATE ". $plugin->get_table() ." SET ". $column ." = %s WHERE bibtexkey = %s",
+									$data,
+									$key
+								)
+							);	
+						}else{
+							$wpdb->query( 
+								$wpdb->prepare( 
+									"INSERT INTO ". $plugin->get_table_debug() ." (type, value)VALUES(%s, %s)",
+									"missing_field",
+									$column
+								)
+							);	
+						}
+					}
+				}
+			}
+		}
+
+		$publications = $wpdb->get_results("SELECT * FROM ". $plugin->get_table());
+
 		include_once( 'views/admin.php' );
 	}
 

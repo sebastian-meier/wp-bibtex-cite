@@ -33,6 +33,27 @@ class WP_Bibtex_Cite {
 	const VERSION = '0.0.1';
 
 	/**
+	 * Plugin database tables names.
+	 *
+	 * @since   0.0.1
+	 *
+	 * @var     string
+	 */
+	protected $plugin_table = 'bibtex_cite_db';
+	protected $plugin_table_debug = 'bibtex_cite_debug';
+
+
+	/**
+	 * Plugin database table fields available for storing bibtex metadata.
+	 *
+	 * @since   0.0.1
+	 *
+	 * @var     string
+	 */
+	protected $plugin_table_fields = array("article", "book", "author", "key", "title", "edition", "publisher", "journal", "volume", "number", "pages", "year", "note", "url", "incollection", "editor", "booktitle", "inproceedings", "series", "mastersthesis", "school", "address", "misc", "howpublished", "phdthesis", "unpublished", "month", "year", "day", "quality", "isbn", "doi", "date", "annote", "chapter", "crossref", "eprint", "institution", "organization", "type", "location", "numpages", "eid", "implementationurl", "paperurl");
+	protected $plugin_table_fields_display = array("bibtexkey", "author", "title", "year", "url", "isbn", "doi", "type");
+
+	/**
 	 * @TODO - Rename "plugin-name" to the name of your plugin
 	 *
 	 * Unique identifier for your plugin.
@@ -95,6 +116,69 @@ class WP_Bibtex_Cite {
 	}
 
 	/**
+	 * Check if a field exists on the server.
+	 *
+	 * @since    1.0.0
+	 *
+	 * @return    Plugin slug variable.
+	 */
+	public function get_table_field_exists($fname) {
+		$r = false;
+		foreach($this->plugin_table_fields as $f){
+			if($f == $fname){
+				$r = true;
+			}
+		}
+		return $r;
+	}
+
+	/**
+	 * Get database field list.
+	 *
+	 * @since    1.0.0
+	 *
+	 * @return    Plugin slug variable.
+	 */
+	public function get_table_field() {
+		return $this->plugin_table_fields;
+	}
+
+	/**
+	 * Get database field list.
+	 *
+	 * @since    1.0.0
+	 *
+	 * @return    Plugin slug variable.
+	 */
+	public function get_table_field_display() {
+		return $this->plugin_table_fields_display;
+	}
+
+	/**
+	 * Return the plugin table.
+	 *
+	 * @since    1.0.0
+	 *
+	 * @return    Plugin slug variable.
+	 */
+	public function get_table() {
+		global $wpdb;
+		return $wpdb->prefix . $this->plugin_table;
+	}
+
+	/**
+	 * Return the plugin table.
+	 *
+	 * @since    1.0.0
+	 *
+	 * @return    Plugin slug variable.
+	 */
+	public function get_table_debug() {
+		global $wpdb;
+		return $wpdb->prefix . $this->plugin_table_debug;
+	}
+
+	/**
 	 * Return an instance of this class.
 	 *
 	 * @since     1.0.0
@@ -114,7 +198,7 @@ class WP_Bibtex_Cite {
 	/**
 	 * Fired when the plugin is activated.
 	 *
-	 * @since    1.0.0
+	 * @since    0.0.1
 	 *
 	 * @param    boolean    $network_wide    True if WPMU superadmin uses
 	 *                                       "Network Activate" action, false if
@@ -122,6 +206,7 @@ class WP_Bibtex_Cite {
 	 *                                       activated on an individual blog.
 	 */
 	public static function activate( $network_wide ) {
+		global $wpdb;
 
 		if ( function_exists( 'is_multisite' ) && is_multisite() ) {
 
@@ -146,6 +231,72 @@ class WP_Bibtex_Cite {
 			self::single_activate();
 		}
 
+		//Database initialization
+		require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
+
+		$plugin = WP_Bibtex_Cite::get_instance();
+
+		//Create a database for debug information
+		$table_name = $plugin->get_table_debug();
+		$sql = "CREATE TABLE $table_name (
+			`id` INT NOT NULL AUTO_INCREMENT,
+			`type` TEXT CHARACTER SET utf8 COLLATE utf8_general_ci,
+			`value` TEXT CHARACTER SET utf8 COLLATE utf8_general_ci,
+			UNIQUE (`id`),
+			PRIMARY KEY (`id`)
+		)";
+		dbDelta( $sql );
+
+		$table_name = $plugin->get_table();
+		$sql = "CREATE TABLE $table_name (
+			`bibtexkey` 	VARCHAR(255), 	
+			`article` 		TEXT CHARACTER SET utf8 COLLATE utf8_general_ci,
+			`book` 			TEXT CHARACTER SET utf8 COLLATE utf8_general_ci,
+			`author` 		TEXT CHARACTER SET utf8 COLLATE utf8_general_ci,
+			`key` 			TEXT CHARACTER SET utf8 COLLATE utf8_general_ci,
+			`title` 		TEXT CHARACTER SET utf8 COLLATE utf8_general_ci,
+			`edition` 		TEXT CHARACTER SET utf8 COLLATE utf8_general_ci,
+			`publisher` 	TEXT CHARACTER SET utf8 COLLATE utf8_general_ci,
+			`journal` 		TEXT CHARACTER SET utf8 COLLATE utf8_general_ci,
+			`volume` 		TEXT CHARACTER SET utf8 COLLATE utf8_general_ci,
+			`number` 		TEXT CHARACTER SET utf8 COLLATE utf8_general_ci,
+			`pages` 		TEXT CHARACTER SET utf8 COLLATE utf8_general_ci,
+			`year` 			TEXT CHARACTER SET utf8 COLLATE utf8_general_ci,
+			`note` 			TEXT CHARACTER SET utf8 COLLATE utf8_general_ci,
+			`url` 			TEXT CHARACTER SET utf8 COLLATE utf8_general_ci,
+			`incollection` 	TEXT CHARACTER SET utf8 COLLATE utf8_general_ci,
+			`editor` 		TEXT CHARACTER SET utf8 COLLATE utf8_general_ci,
+			`booktitle` 	TEXT CHARACTER SET utf8 COLLATE utf8_general_ci,
+			`inproceedings` TEXT CHARACTER SET utf8 COLLATE utf8_general_ci,
+			`series` 		TEXT CHARACTER SET utf8 COLLATE utf8_general_ci,
+			`mastersthesis` TEXT CHARACTER SET utf8 COLLATE utf8_general_ci,
+			`school` 		TEXT CHARACTER SET utf8 COLLATE utf8_general_ci,
+			`address` 		TEXT CHARACTER SET utf8 COLLATE utf8_general_ci,
+			`misc` 			TEXT CHARACTER SET utf8 COLLATE utf8_general_ci,
+			`howpublished` 	TEXT CHARACTER SET utf8 COLLATE utf8_general_ci,
+			`phdthesis` 	TEXT CHARACTER SET utf8 COLLATE utf8_general_ci,
+			`unpublished` 	TEXT CHARACTER SET utf8 COLLATE utf8_general_ci,
+			`month` 		TEXT CHARACTER SET utf8 COLLATE utf8_general_ci,
+			`day` 			TEXT CHARACTER SET utf8 COLLATE utf8_general_ci,
+			`quality` 		TEXT CHARACTER SET utf8 COLLATE utf8_general_ci,
+			`isbn` 			TEXT CHARACTER SET utf8 COLLATE utf8_general_ci,
+			`doi` 			TEXT CHARACTER SET utf8 COLLATE utf8_general_ci,
+			`date` 			TEXT CHARACTER SET utf8 COLLATE utf8_general_ci,
+			`annote` 		TEXT CHARACTER SET utf8 COLLATE utf8_general_ci,
+			`chapter` 		TEXT CHARACTER SET utf8 COLLATE utf8_general_ci,
+			`crossref` 		TEXT CHARACTER SET utf8 COLLATE utf8_general_ci,
+			`eprint` 		TEXT CHARACTER SET utf8 COLLATE utf8_general_ci,
+			`institution` 	TEXT CHARACTER SET utf8 COLLATE utf8_general_ci,
+			`organization` 	TEXT CHARACTER SET utf8 COLLATE utf8_general_ci,
+			`type` 			TEXT CHARACTER SET utf8 COLLATE utf8_general_ci,
+			`location` 		TEXT CHARACTER SET utf8 COLLATE utf8_general_ci,
+			`numpages` 		TEXT CHARACTER SET utf8 COLLATE utf8_general_ci,
+			`eid` 			TEXT CHARACTER SET utf8 COLLATE utf8_general_ci,
+			`implementationurl` TEXT CHARACTER SET utf8 COLLATE utf8_general_ci,
+			`paperurl`		TEXT CHARACTER SET utf8 COLLATE utf8_general_ci,	
+			PRIMARY KEY (bibtexkey)
+		)";
+		dbDelta( $sql );
 	}
 
 	/**

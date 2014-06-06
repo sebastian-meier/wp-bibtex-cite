@@ -19,4 +19,52 @@
 
 	<!-- @TODO: Provide markup for your options page here. -->
 
+<?php
+
+	if(isset($added_cites)){
+		foreach ($added_cites as $cite) {
+			echo $cite." added<br />"."\n";
+		}
+	}
+
+?>
+
+	<form action="?page=wp-bibtex-cite" method="POST" enctype="multipart/form-data">
+		<input type="file" name="file">
+		<input type="submit">
+	</form>
+
+<table id="bibtex-cite-list">
+<thead>
+	<tr>
+<?php
+	foreach($plugin->get_table_field_display() as $field){
+		echo '		<th>'.$field.'</th>'."\n";
+	}
+?>
+	</tr>
+</thead>
+<tbody>
+<?php
+
+	foreach($publications as $publication){
+		echo '	<tr>'."\n";
+		foreach($plugin->get_table_field_display() as $field){
+			echo '		<th>'.$publication->$field.'</th>'."\n";
+		}
+		echo '	</tr>'."\n";
+	}
+?>
+</tbody>
+<tfoot>
+	<tr>
+<?php
+	foreach($plugin->get_table_field_display() as $field){
+		echo '		<th>'.$field.'</th>'."\n";
+	}
+?>
+	</tr>
+</tfoot>
+</table>
+
 </div>
